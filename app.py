@@ -1,53 +1,63 @@
 import streamlit as st
 import random
 
-# 1. AI ROUTING LOGIC FUNCTION
-def get_recommended_route(tx_type):
-    # Simulated gas fees in USD
+# Page Configuration
+st.set_page_config(page_title="OptiScale AI", page_icon="⚡", layout="wide")
+
+st.title("⚡ OptiScale AI - Smart Blockchain Router")
+st.write("Cross-Chain Gas Optimization & AI Routing Engine")
+
+# 1. USER INPUT OPTIONS (Kept simple and familiar)
+col1, col2 = st.columns(2)
+
+with col1:
+    tx_type = st.selectbox(
+        "Select Transaction Type:",
+        ["Mass Payroll", "Instant Vendor Payment", "Treasury Transfer"]
+    )
+
+with col2:
+    tx_amount = st.number_input("Transaction Amount ($ USD):", min_value=1.0, value=1000.0, step=100.0)
+
+# 2. DYNAMIC ROUTING ENGINE (Recalculates best route dynamically on analyze)
+if st.button("🚀 Analyze & Route Transaction"):
+    
+    # Generate live, slightly varied dynamic gas fees (in USD)
     gas_fees = {
-        "Ethereum L1": round(random.uniform(15.0, 45.0), 2),
-        "Arbitrum L2": round(random.uniform(0.10, 0.80), 2),
-        "Base L2": round(random.uniform(0.01, 0.15), 2),
-        "Polygon": round(random.uniform(0.02, 0.20), 2)
+        "Ethereum L1": round(random.uniform(18.0, 50.0), 2),
+        "Arbitrum L2": round(random.uniform(0.15, 0.90), 2),
+        "Base L2": round(random.uniform(0.01, 0.12), 2),
+        "Polygon": round(random.uniform(0.02, 0.18), 2)
     }
     
-    # Dynamic logic based on selected transaction type
+    # Determine optimal route based on selected transaction type & live lowest gas
     if tx_type == "Mass Payroll":
+        # Evaluates lowest fee between low-cost L2s
         best_route = "Base L2" if gas_fees["Base L2"] <= gas_fees["Polygon"] else "Polygon"
-        reasoning = "Selected for maximum gas efficiency on bulk batch transactions."
+        reasoning = f"Optimized for batch settlement. Saves ~{round(((gas_fees['Ethereum L1'] - gas_fees[best_route])/gas_fees['Ethereum L1'])*100, 1)}% vs Ethereum L1."
         
     elif tx_type == "Instant Vendor Payment":
-        best_route = "Arbitrum L2"
-        reasoning = "Selected for ultra-low latency and instant block finality."
+        best_route = "Arbitrum L2" if gas_fees["Arbitrum L2"] < 0.50 else "Base L2"
+        reasoning = "Selected for sub-second block finality and low execution latency."
         
     elif tx_type == "Treasury Transfer":
         best_route = "Ethereum L1"
-        reasoning = "Selected for maximum decentralization and protocol-level security."
-        
-    else:
-        best_route = min(gas_fees, key=gas_fees.get)
-        reasoning = "Selected as the absolute lowest cost network at this moment."
-        
-    return best_route, gas_fees, reasoning
+        reasoning = "High-value enterprise transfer prioritized for maximum L1 network security."
 
-# 2. STREAMLIT USER INTERFACE (UI)
-st.title("OptiScale AI - Smart Routing Engine")
+    st.divider()
 
-# User selects transaction type
-tx_type = st.selectbox(
-    "Select Transaction Type:",
-    ["Mass Payroll", "Instant Vendor Payment", "Treasury Transfer"]
-)
+    # 3. DISPLAY RESULTS (Clean UI)
+    st.subheader("💡 AI Recommended Route")
+    st.success(f"**Optimal Network:** {best_route}")
+    st.info(f"**AI Logic:** {reasoning}")
 
-# Trigger dynamic AI route recommendation
-if st.button("Find Optimal Route"):
-    best_route, fees, reason = get_recommended_route(tx_type)
+    # Display fee breakdown across all chains
+    st.subheader("📊 Live Chain Fee Comparison")
     
-    # Display dynamic results
-    st.success(f"**Recommended Route:** {best_route}")
-    st.info(f"**AI Decision Logic:** {reason}")
-    
-    # Display gas fee comparisons
-    st.subheader("Current Gas Fee Estimates:")
-    for chain, fee in fees.items():
-        st.write(f"- **{chain}:** ${fee}")
+    fee_cols = st.columns(4)
+    for idx, (chain, fee) in enumerate(gas_fees.items()):
+        with fee_cols[idx]:
+            if chain == best_route:
+                st.metric(label=f"🟢 {chain} (Best)", value=f"${fee}")
+            else:
+                st.metric(label=f"⚪ {chain}", value=f"${fee}")
